@@ -481,7 +481,7 @@ All handlers return JSON errors in the format `{ "message": "..." }`.
 |---|---|
 | `1.0.0` | Initial release — register, login, protect middleware |
 | `2.0.0` | **Breaking** — `protect` changed to factory function. Custom fields via `[key: string]: unknown` on `AuthUser` |
-| `2.1.0` | Email verification, forgot/reset password. Optional adapter methods. `emailSender` + `verificationUrl` config. Stateful refresh tokens with rotation. `refreshHandler`, `logoutHandler`, `logoutAllHandler`, `changePasswordHandler`, `resendVerificationHandler` |
+| `2.1.1` | Email verification, forgot/reset password. Optional adapter methods. `emailSender` + `verificationUrl` config. Stateful refresh tokens with rotation. `refreshHandler`, `logoutHandler`, `logoutAllHandler`, `changePasswordHandler`, `resendVerificationHandler` |
 
 ---
 
