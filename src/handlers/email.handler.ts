@@ -8,7 +8,8 @@ import {
   getExpiryDate,
   sendPasswordResetEmail,
 } from "../services/email.service";
-import { hashPassword } from "../services/password.service";
+import { comparePassword, hashPassword } from "../services/password.service";
+import { sendVerificationEmail } from "../services/email.service";
 
 // POST /verify-email  { token }
 export async function verifyEmailHandler(
@@ -108,6 +109,77 @@ export async function resetPasswordHandler(
     await adapter.deleteVerificationToken(token);
 
     res.status(200).json({ message: "Password reset successfully" });
+  } catch (err) {
+    if (err instanceof AuthError) {
+      res.status(err.statusCode).json({ message: err.message });
+    } else if (err instanceof Error) {
+      res.status(400).json({ message: err.message });
+    }
+  }
+}
+
+// POST /resend-verification  { email }
+export async function resendVerificationHandler(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { adapter } = requireEmailConfig();
+    const { email } = req.body;
+
+    if (!email) throw new AuthError("Email is required", 400);
+
+    const user = await adapter.findUserByEmail(email);
+
+    // Always 200 — same pattern as forgotPassword, don't leak existence
+    if (!user || user.isVerified) {
+      res.status(200).json({ message: "If that email exists and is unverified, a new link has been sent" });
+      return;
+    }
+
+    const token = generateToken();
+    await adapter.saveVerificationToken({
+      token,
+      userId:    user.id,
+      type:      "email_verification",
+      expiresAt: getExpiryDate(24 * 60),
+    });
+    await sendVerificationEmail(user.email, token);
+
+    res.status(200).json({ message: "If that email exists and is unverified, a new link has been sent" });
+  } catch (err) {
+    if (err instanceof AuthError) {
+      res.status(err.statusCode).json({ message: err.message });
+    } else if (err instanceof Error) {
+      res.status(400).json({ message: err.message });
+    }
+  }
+}
+
+// POST /change-password  — protected route, requires valid JWT
+// Body: { currentPassword, newPassword }
+export async function changePasswordHandler(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { adapter } = requireEmailConfig();
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      throw new AuthError("currentPassword and newPassword are required", 400);
+    }
+
+    // req.user is set by protect() middleware
+    const user = await adapter.findUserById(req.user!.id);
+    if (!user) throw new AuthError("User not found", 404);
+
+    const isValid = await comparePassword(currentPassword, user.password);
+    if (!isValid) throw new AuthError("Current password is incorrect", 401);
+
+    const hashed = await hashPassword(newPassword);
+    await adapter.updateUser(user.id, { password: hashed });
+
+    // Invalidate all refresh tokens if adapter supports it
+    if (adapter.deleteAllRefreshTokens) {
+      await adapter.deleteAllRefreshTokens(user.id);
+    }
+
+    res.status(200).json({ message: "Password changed successfully" });
   } catch (err) {
     if (err instanceof AuthError) {
       res.status(err.statusCode).json({ message: err.message });

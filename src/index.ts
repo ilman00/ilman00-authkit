@@ -7,6 +7,10 @@ import {
   resetPasswordHandler,
 } from "./handlers/email.handler";
 import { AuthConfig, AuthAdapter, AuthUser, AuthRequest, VerificationToken } from "./types";
+import { refreshHandler } from "./handlers/refresh.handler";
+import { logoutHandler, logoutAllHandler } from "./handlers/logout.handler";
+import { RefreshToken } from "./types";
+
 
 export function init(config: AuthConfig): void {
   initConfig(config);
@@ -19,6 +23,9 @@ export {
   verifyEmailHandler,
   forgotPasswordHandler,
   resetPasswordHandler,
+  refreshHandler,
+  logoutHandler,
+  logoutAllHandler,
 };
 
-export type { AuthConfig, AuthAdapter, AuthUser, AuthRequest, VerificationToken };
+export type { AuthConfig, AuthAdapter, AuthUser, AuthRequest, VerificationToken, RefreshToken };

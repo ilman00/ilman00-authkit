@@ -32,7 +32,7 @@ export async function registerUser(userData: {
     await adapter.saveVerificationToken({
       token,
       userId: user.id,
-      type:      "email_verification",
+      type: "email_verification",
       expiresAt: getExpiryDate(24 * 60), // 24 hours
     });
     await sendVerificationEmail(user.email, token);
@@ -48,7 +48,18 @@ export async function loginUser(
   if (!user) throw new Error("User not found");
   const isValid = await comparePassword(password, user.password);
   if (!isValid) throw new Error("Invalid credentials");
-  const accessToken  = signAccessToken(user);
+  const accessToken = signAccessToken(user);
   const refreshToken = signRefreshToken(user);
+
+
+  // Persist refresh token if adapter supports stateful mode
+  if (adapter.saveRefreshToken) {
+    await adapter.saveRefreshToken({
+      token: refreshToken,
+      userId: user.id,
+      expiresAt: getExpiryDate(7 * 24 * 60),
+    });
+  }
+
   return { accessToken, refreshToken };
 }

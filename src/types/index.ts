@@ -16,18 +16,32 @@ export interface VerificationToken {
   expiresAt: Date;
 }
 
+export interface RefreshToken {
+  token: string;
+  userId: string;
+  expiresAt: Date;
+}
+
 export interface AuthAdapter {
-  // --- existing ---
+  // --- required ---
   findUserByEmail: (email: string) => Promise<AuthUser | null>;
   findUserById:    (id: string)    => Promise<AuthUser | null>;
   createUser:      (data: Partial<AuthUser>) => Promise<AuthUser>;
 
-  // --- new optional ---
+  // --- optional (required only when using email features) ---
   updateUser?:              (id: string, data: Partial<AuthUser>) => Promise<AuthUser>;
   saveVerificationToken?:   (payload: VerificationToken) => Promise<void>;
   findVerificationToken?:   (token: string) => Promise<VerificationToken | null>;
   deleteVerificationToken?: (token: string) => Promise<void>;
+
+  // --- optional (required only when using stateful refresh tokens) ---
+  saveRefreshToken?:   (payload: RefreshToken) => Promise<void>;
+  findRefreshToken?:   (token: string) => Promise<RefreshToken | null>;
+  deleteRefreshToken?: (token: string) => Promise<void>;
+  deleteAllRefreshTokens?: (userId: string) => Promise<void>;
 }
+
+
 
 export interface AuthConfig {
   secret: string;
